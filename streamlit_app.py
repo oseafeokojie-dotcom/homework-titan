@@ -44,19 +44,27 @@ def register_user(username, password):
 
 init_db()
 
-# --- STREAMLIT CONFIG ---
-st.set_page_config(page_title="Afe's Homework Titan PRO", page_icon="👑", layout="centered")
+# --- 👑 LINK PREVIEW & LINK UPGRADES ---
+st.set_page_config(
+    page_title="Afe's Homework Titan PRO — Cyber AI Solver", 
+    page_icon="👑", 
+    layout="centered"
+)
+
+# --- 🎨 PRO CYBERPUNK TERMINAL THEME ---
 st.markdown("""
     <style>
-    .main { background-color: #0b0f19; color: #ffffff; }
-    h1 { color: #00ffcc; text-shadow: 0 0 12px #00ffcc; font-family: 'Courier New', monospace; }
-    h2 { color: #ff007f; font-family: 'Courier New', monospace; }
-    .stButton>button { background-color: #ff007f; color: white; border-radius: 8px; box-shadow: 0 0 10px #ff007f; font-weight: bold; width: 100%; }
-    .stButton>button:hover { background-color: #00ffcc; color: black; box-shadow: 0 0 15px #00ffcc; }
+    .main { background-color: #060913 !important; color: #00ffcc !important; }
+    h1 { color: #00ffcc !important; text-shadow: 0 0 15px #00ffcc; font-family: 'Courier New', monospace; font-weight: bold; }
+    h2, h3 { color: #ff007f !important; text-shadow: 0 0 10px #ff007f; font-family: 'Courier New', monospace; }
+    .stButton>button { background-color: #ff007f !important; color: white !important; border-radius: 8px; box-shadow: 0 0 12px #ff007f; font-weight: bold; width: 100%; border: none; }
+    .stButton>button:hover { background-color: #00ffcc !important; color: black !important; box-shadow: 0 0 20px #00ffcc; cursor: pointer; }
+    .stTextInput>div>div>input { background-color: #101626 !important; color: #00ffcc !important; border: 1px solid #ff007f !important; font-family: 'Courier New', monospace; }
+    .stSelectbox>div>div>div { background-color: #101626 !important; color: #00ffcc !important; border: 1px solid #ff007f !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 🔒 SECURITY UPGRADE: Your code now pulls the key safely from Streamlit Cloud Secrets!
+# Pull your API key safely from Streamlit Cloud Secrets vault
 MY_API_KEY = st.secrets["GEMINI_API_KEY"]
 
 if 'logged_in' not in st.session_state: st.session_state.logged_in = False
@@ -90,12 +98,12 @@ if not st.session_state.logged_in:
     elif menu == "Log In to Account":
         if st.button("INITIALIZE SYSTEM ACCESS"):
             user_info = get_user_data(username_input)
-            if user_info and user_info == password_input:
+            if user_info and user_info[0] == password_input:
                 st.session_state.logged_in = True
                 st.session_state.username = username_input
-                st.session_state.score = user_info
-                if user_info:
-                    st.session_state.chat_history = user_info.split("||")
+                st.session_state.score = user_info[1]
+                if user_info[2]:
+                    st.session_state.chat_history = user_info[2].split("||")
                 else:
                     st.session_state.chat_history = []
                 st.success("ACCESS GRANTED.")
@@ -166,4 +174,3 @@ else:
     if st.sidebar.button("LOG OUT / DISCONNECT"):
         st.session_state.logged_in = False
         st.rerun()
-
