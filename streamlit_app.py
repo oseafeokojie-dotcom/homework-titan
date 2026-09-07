@@ -1,64 +1,67 @@
 import streamlit as st
 from google import genai
 
-# 1. Page Configuration (Sets the title and emoji icon)
-st.set_page_config(page_title="Afe's Homework Titan PRO", page_icon="🧮", layout="centered")
+# 1. Page Configuration
+st.set_page_config(page_title="Afe's Homework Titan", page_icon="🧮", layout="centered")
 
-# 2. 🔑 SAFE KEYS: This pulls securely from your Streamlit Advanced Settings vault
-# (Make sure to set these up in your Streamlit Cloud Secrets dashboard!)
+# 2. 🔑 Safe Keys from Secrets
 CORRECT_KEY = st.secrets["DOWNLOAD_KEY"]
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 
-# 3. Sidebar Configuration (The Store Front with your real Selar link)
-st.sidebar.title("👑 Unlock Titan PRO")
-st.sidebar.write("Get instant access to the ultimate math homework helper!")
+# Initialize session states for tracking free usage and chat history
+if "free_chat_count" not in st.session_state:
+    st.session_state.free_chat_count = 0
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "assistant", "content": "Hello! I am the Titan Math AI. Ask me any math question!"}
+    ]
 
-# 🌟 YOUR EXACT SELAR LINK LISTED FOR 2,500 NGN
-st.sidebar.markdown("[👉 CLICK HERE TO BUY YOUR KEY (2,500 NGN) 👈](https://selar.com)")
+# 3. Sidebar Configuration (The Store Front)
+st.sidebar.title("👑 Homework Titan Store")
+st.sidebar.markdown("[👉 CLICK HERE TO BUY PRO KEY (2,500 NGN) 👈](https://selar.com)")
 st.sidebar.write("---")
 
-# User types the key they bought and downloaded from your Premium_key.txt file here
+# Key input field
 user_key = st.sidebar.text_input("🔑 Paste your Premium Key here:", type="password")
 
+# Check if user is PRO
+is_pro = (user_key == CORRECT_KEY)
+
+if is_pro:
+    st.sidebar.success("👑 PRO Status: Active (Unlimited Access)")
+else:
+    st.sidebar.info(f"⚪ Standard Status: Active ({3 - st.session_state.free_chat_count} Free AI Questions Left)")
+
 # 4. Main App Interface
-st.title("🧮 Afe's Homework Titan PRO")
+st.title("🧮 Afe's Homework Titan")
 st.write("An online math homework helper equipped with a practice question mini calculator and math chat bot.")
 st.write("---")
 
-# 5. Check if the Premium Key entered by the user matches your secret key
-if user_key == CORRECT_KEY:
-    st.success("🎉 Access Granted! Welcome to PRO Mode.")
-    
-    # --- FEATURE 1: REAL AI MATH CHAT BOT ---
-    st.subheader("🤖 Titan AI Math Chat Bot")
-    st.write("Ask any math problem. The AI will explain it step-by-step!")
+# --- FEATURE 1: AI MATH CHAT BOT ---
+st.subheader("🤖 Titan AI Math Chat Bot")
 
-    # Initialize chat history so the AI remembers previous messages in the conversation
-    if "messages" not in st.session_state:
-        st.session_state.messages = [
-            {"role": "assistant", "content": "Hello! I am the Titan Math AI. Paste your math problem here!"}
-        ]
+# Display past chat messages
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
 
-    # Display past chat messages on the screen
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
+# Determine if they can chat
+can_chat = is_pro or (st.session_state.free_chat_count < 3)
 
-    # Chat Input Box at the bottom of the screen
+if can_chat:
     if user_prompt := st.chat_input("Type your math problem here (e.g., Solve 3x + 7 = 22)"):
-        # Display user message instantly
         with st.chat_message("user"):
             st.write(user_prompt)
         st.session_state.messages.append({"role": "user", "content": user_prompt})
 
+        # Count the question if they are a standard user
+        if not is_pro:
+            st.session_state.free_chat_count += 1
+
         try:
-            # Set up the real AI client using your Gemini key
             client = genai.Client(api_key=GEMINI_API_KEY)
+            system_instruction = "You are Afe's Homework Titan PRO. You are a brilliant, friendly math tutor for students. Break down equations step-by-step cleanly with final answers clearly shown."
             
-            # Give the AI strict instructions to act like a friendly math teacher
-            system_instruction = "You are Afe's Homework Titan PRO. You are a brilliant, friendly math tutor for students. Break down equations step-by-step cleanly."
-            
-            # Request response from Gemini model
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=user_prompt,
@@ -68,43 +71,39 @@ if user_key == CORRECT_KEY:
         except Exception as e:
             ai_response = f"❌ Error connecting to AI: {str(e)}"
 
-        # Display AI response on the screen
         with st.chat_message("assistant"):
             st.write(ai_response)
         st.session_state.messages.append({"role": "assistant", "content": ai_response})
-
-    st.write("---")
-
-    # --- FEATURE 2: MINI CALCULATOR ---
-    st.subheader("🧮 Titan Mini Calculator")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        num1 = st.number_input("Enter first number:", value=0.0)
-    with col2:
-        num2 = st.number_input("Enter second number:", value=0.0)
         
-    operation = st.selectbox("Choose operation:", ["➕ Add", "➖ Subtract", "✖️ Multiply", "➕ Divide"])
-    
-    if st.button("Calculate Now"):
-        if operation == "➕ Add":
-            st.metric("Result", num1 + num2)
-        elif operation == "➖ Subtract":
-            st.metric("Result", num1 - num2)
-        elif operation == "✖️ Multiply":
-            st.metric("Result", num1 * num2)
-        elif operation == "➕ Divide":
-            if num2 != 0:
-                st.metric("Result", num1 / num2)
-            else:
-                st.error("Cannot divide by zero!")
-
+        # Rerun to update the sidebar count instantly
+        st.rerun()
 else:
-    # 6. What Unpaid/Locked Users See
-    st.warning("⚠️ **PRO Features Locked**")
-    st.write("Please purchase a Premium Access Key from the link in the sidebar to unlock the Titan Math Brain.")
+    st.error("⚠️ Free AI Questions Limit Reached!")
+    st.write("You have used your 3 free questions. Please purchase a **PRO Premium Access Key** from the sidebar link to unlock unlimited AI step-by-step solutions!")
+
+st.write("---")
+
+# --- FEATURE 2: MINI CALCULATOR (Always Free for Standard Users!) ---
+st.subheader("🧮 Titan Mini Calculator")
+st.write("Perform standard calculations instantly.")
+
+col1, col2 = st.columns(2)
+with col1:
+    num1 = st.number_input("Enter first number:", value=0.0, key="calc_num1")
+with col2:
+    num2 = st.number_input("Enter second number:", value=0.0, key="calc_num2")
     
-    st.info("💡 **Free Tester:** Try solving standard addition below to test the Titan speed!")
-    free_test = st.text_input("What is 5 + 5?")
-    if free_test == "10":
-        st.success("Correct! Buy the PRO Key to unlock hard algebra, word problems, and graphing help!")
+operation = st.selectbox("Choose operation:", ["➕ Add", "➖ Subtract", "✖️ Multiply", "➕ Divide"], key="calc_op")
+
+if st.button("Calculate Now"):
+    if operation == "➕ Add":
+        st.metric("Result", num1 + num2)
+    elif operation == "➖ Subtract":
+        st.metric("Result", num1 - num2)
+    elif operation == "✖️ Multiply":
+        st.metric("Result", num1 * num2)
+    elif operation == "➕ Divide":
+        if num2 != 0:
+            st.metric("Result", num1 / num2)
+        else:
+            st.error("Cannot divide by zero!")
