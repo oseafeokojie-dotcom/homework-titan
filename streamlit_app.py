@@ -62,9 +62,9 @@ if can_chat:
             client = genai.Client(api_key=GEMINI_API_KEY)
             system_instruction = "You are Afe's Homework Titan PRO. You are a brilliant, friendly math tutor for students. Break down equations step-by-step cleanly with final answers clearly shown."
             
-            # 🔥 FIX: Changed model to gemini-3.6-flash
+            # 🚀 STABLE FIX: Changed model to gemini-1.5-flash to bypass the high demand spike
             response = client.models.generate_content(
-                model='gemini-3.6-flash',
+                model='gemini-1.5-flash',
                 contents=user_prompt,
                 config={"system_instruction": system_instruction}
             )
